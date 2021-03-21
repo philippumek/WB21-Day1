@@ -1,0 +1,138 @@
+---
+title: "Tidyverse Exercise"
+author: ""
+date: "22/03/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Tidyverse
+
+- Load packages
+  - we need tidyverse
+
+```{r}
+
+```
+
+## Section 1: Data description
+
+### read csv data
+
+We will read the file "data/covid_us_county.csv.gz"
+
+```{r}
+data_covid <- NA
+
+```
+
+### Simple discription of the table
+
+Now the data is in R workspace. Do the following
+
+
+### Count the number of variabes and rows
+
+```{r}
+
+```
+
+### Print out the first 6 rows of the data.frame
+
+```{r}
+
+```
+
+
+### How many states exists?
+
+(Hint: use `count()`)
+
+
+```{r}
+
+```
+
+
+## Data wrangling, Part 1
+
+### Erase unnecessary rows
+
+First remove the non-country entries
+
+```{r}
+
+```
+
+
+### Create a subset dataset
+
+Find the latest date of the data, then subset the data with only the newest date for each country
+
+```{r}
+
+```
+
+### Max cases/deaths
+
+Which county has the highest number of cases/deaths? What is the number?
+
+```{r}
+
+```
+
+
+## Data wrangling, Part 2
+
+
+### First recorded cases/deaths (by county)
+
+Find the 10 counties with the earliest recorded cases/deaths.
+
+```{r}
+
+```
+
+### Aggregate the number of death
+
+For each state, calculate the total number of cases/deaths for each day (Hint: grouping and summarize)
+
+
+```{r}
+
+```
+
+
+### First recorded cases/deaths (by state)
+
+Find the earliest day when a state recorded a case. Arrange by the date in descending order
+
+
+## Visualizing (Optional)
+
+Now let's visualize the outputs using ggplot
+
+### Time series plot of total cases/death in the US
+
+```{r}
+
+```
+
+
+### Time series plot of total cases/deaths by the state
+
+```{r}
+
+```
+
+
+### Daily increase trend
+
+How's the trend of the daily case increases. Which state look bad now?
+
+```{r}
+
+```
