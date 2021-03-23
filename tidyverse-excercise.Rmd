@@ -1,6 +1,6 @@
 ---
 title: "Tidyverse Exercise"
-author: ""
+author: "Philipp Umek"
 date: "22/03/2021"
 output: html_document
 ---
@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
   - we need tidyverse
 
 ```{r}
-
+library(tidyverse)
 ```
 
 ## Section 1: Data description
@@ -25,7 +25,7 @@ knitr::opts_chunk$set(echo = TRUE)
 We will read the file "data/covid_us_county.csv.gz"
 
 ```{r}
-data_covid <- NA
+data_covid <- read_csv("data/covid_us_county.csv.gz")
 
 ```
 
@@ -37,13 +37,13 @@ Now the data is in R workspace. Do the following
 ### Count the number of variabes and rows
 
 ```{r}
-
+dim(data_covid)
 ```
 
 ### Print out the first 6 rows of the data.frame
 
 ```{r}
-
+head(data_covid, 6)
 ```
 
 
@@ -53,7 +53,9 @@ Now the data is in R workspace. Do the following
 
 
 ```{r}
-
+length(unique(data_covid$state))
+# or
+data_covid %>% group_by(state) %>% count()
 ```
 
 
@@ -61,10 +63,11 @@ Now the data is in R workspace. Do the following
 
 ### Erase unnecessary rows
 
-First remove the non-country entries
+First remove the non-county(sic!) entries
 
 ```{r}
-
+table(is.na(data_covid$county))
+data_covid <- data_covid %>% filter(!is.na(county))
 ```
 
 
@@ -73,7 +76,7 @@ First remove the non-country entries
 Find the latest date of the data, then subset the data with only the newest date for each country
 
 ```{r}
-
+dat2 <- data_covid %>% filter(date == max(date))
 ```
 
 ### Max cases/deaths
@@ -81,7 +84,9 @@ Find the latest date of the data, then subset the data with only the newest date
 Which county has the highest number of cases/deaths? What is the number?
 
 ```{r}
+dat2 %>% group_by(county, state) %>% summarize(deaths = max(deaths)) %>% arrange(desc(deaths)) %>% head(5)
 
+dat2 %>% group_by(county, state) %>% summarize(cases = max(cases)) %>% arrange(desc(cases)) %>% head(10)
 ```
 
 
@@ -93,7 +98,9 @@ Which county has the highest number of cases/deaths? What is the number?
 Find the 10 counties with the earliest recorded cases/deaths.
 
 ```{r}
+data_covid %>% filter(cases > 0) %>% group_by(state, county) %>% arrange(desc(state, county, date)) %>% slice(1) %>% arrange(date) %>% select(county, state, date, cases) %>% head(10)
 
+data_covid %>% filter(deaths > 0) %>% group_by(state, county) %>% arrange(desc(state, county, date)) %>% slice(1) %>% arrange(date) %>% select(county, state, date, deaths) %>% head(10)
 ```
 
 ### Aggregate the number of death
@@ -102,7 +109,8 @@ For each state, calculate the total number of cases/deaths for each day (Hint: g
 
 
 ```{r}
-
+data_covid %>% group_by(state, date) %>% summarise(cases = sum(cases),
+                                                   deaths = sum(deaths))
 ```
 
 
@@ -110,6 +118,9 @@ For each state, calculate the total number of cases/deaths for each day (Hint: g
 
 Find the earliest day when a state recorded a case. Arrange by the date in descending order
 
+```{r}
+data_covid %>% filter(cases > 0) %>% group_by(state) %>% summarise(date = min(date)) %>% arrange(desc(date))
+```
 
 ## Visualizing (Optional)
 
@@ -118,6 +129,12 @@ Now let's visualize the outputs using ggplot
 ### Time series plot of total cases/death in the US
 
 ```{r}
+data_covid %>% group_by(date) %>% summarise(cases = sum(cases), deaths = sum(deaths)) %>% mutate(cases = cases / 1000, deaths = deaths / 1000) %>% pivot_longer(-date, names_to = "label", values_to = "count") %>% 
+  ggplot(aes(x = date, y = count, group = label, color = label)) + geom_line()
+
+data_covid %>% group_by(date) %>% summarise(cases = sum(cases)) %>% mutate(cases = cases / 1000) %>% ggplot(aes(x = date, y = cases)) + geom_line()
+
+data_covid %>% group_by(date) %>% summarise(deaths = sum(deaths)) %>% mutate(deaths = deaths / 1000) %>% ggplot(aes(x = date, y = deaths)) + geom_line()
 
 ```
 
@@ -125,14 +142,35 @@ Now let's visualize the outputs using ggplot
 ### Time series plot of total cases/deaths by the state
 
 ```{r}
+data_covid %>% group_by(state, date) %>% summarise(cases = sum(cases)) %>% mutate(cases = cases / 1000) %>% ggplot(aes(x = date, y = cases)) + geom_line() + facet_wrap(~ state)
 
+data_covid %>% group_by(state, date) %>% summarise(deaths = sum(deaths)) %>% mutate(deaths = deaths / 1000) %>% ggplot(aes(x = date, y = deaths)) + geom_line() + facet_wrap(~ state)
 ```
 
+
+### Time series plot of total cases/deaths by the state per 100,000 inhabitants
+
+```{r}
+library(usa)
+usapop <- usa::facts %>% select(state = name, population)
+dat2 <- merge(x = data_covid, y = usapop, all.x = TRUE, by = "state")
+
+dat2 %>% group_by(state, date, population) %>% summarise(cases = sum(cases)) %>% mutate(cases = cases / (population / 100000)) %>% ggplot(aes(x = date, y = cases)) + geom_line() + facet_wrap(~ state)
+
+dat2 %>% group_by(state, date, population) %>% summarise(deaths = sum(deaths)) %>% mutate(deaths = deaths / (population / 100000)) %>% ggplot(aes(x = date, y = deaths)) + geom_line() + facet_wrap(~ state)
+```
 
 ### Daily increase trend
 
 How's the trend of the daily case increases. Which state look bad now?
 
+Top 10 of states with most new cases in the last 7 days
 ```{r}
+dat2 %>% group_by(state, date) %>% summarise(cases = sum(cases)) %>% mutate(trend = cases - lag(cases)) %>% filter(date >= max(date)-7) %>% group_by(state) %>% summarise(trend = sum(trend)) %>% arrange(desc(trend)) %>% head(10)
+```
+
+Top 10 of states with most new cases in the last 7 days in relation to population
+```{r}
+dat2 %>% group_by(state, population, date) %>% arrange(date) %>% summarise(cases = sum(cases)) %>% mutate(trend = cases - lag(cases)) %>% filter(date >= max(date)-7) %>% group_by(state, population) %>% summarise(increase_total = sum(trend)) %>% mutate(increase_per_10k = round(increase_total / (population / 10000), 1)) %>% arrange(desc(increase_per_10k)) %>% head(10)
 
 ```
